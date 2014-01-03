@@ -1,0 +1,6 @@
+.DS_Store
+video-settings.json
+sitemap.xml.gz
+*.pyc
+
+venv

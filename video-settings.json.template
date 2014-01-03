@@ -1,0 +1,12 @@
+{
+	"sitemap" : {
+		"videoLinkExpression" :  "",
+		"sitemapURL" :  ""
+	},
+
+	"glass" : {
+		"videoLinkExpression" :  "",
+		"glassURL" : "" 
+	}
+
+}
