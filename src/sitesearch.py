@@ -5,6 +5,7 @@ import datetime
 import httplib2
 import json
 import calendar
+import time
 
 import videoutils
 
@@ -101,8 +102,9 @@ def searchVideoInDayPage(dayYYYYMMDD, page):
 		print "Failed to search video!!!\n  day:  {0}\n  page:  {1}\n  search URL: {2}\n  HTTP Response: {3}".format(dayYYYYMMDD, page, searchUrl, response)
 
 
-def getSearchDocsInDay(dbcSitesearch, dayYYYYMMDD, showSummary = True):
-	print "Searching for video in day:  {0}".format(dayYYYYMMDD)
+def getSearchDocsInDay(dbcSitesearch, dayYYYYMMDD, showSummary = True, delayBtwPagesInSec = 1):
+	sys.stdout.write("Searching for video in day {0}.".format(dayYYYYMMDD))
+	sys.stdout.flush()
 
 	ctrInserts = 0
 	ctrUpdates = 0
@@ -112,7 +114,7 @@ def getSearchDocsInDay(dbcSitesearch, dayYYYYMMDD, showSummary = True):
 	page = 0
 	while True:
 		searchDocs = searchVideoInDayPage(dayYYYYMMDD, page)
-#		print "Found:\n  day:  {0}\n  page:  {1}\n  docs:  {2}".format(dayYYYYMMDD, page, len(searchDocs))
+#		print "\nFound:\n  day:  {0}\n  page:  {1}\n  docs:  {2}\n".format(dayYYYYMMDD, page, len(searchDocs))
 		if len(searchDocs) < 1:
 			break;
 
@@ -127,14 +129,20 @@ def getSearchDocsInDay(dbcSitesearch, dayYYYYMMDD, showSummary = True):
 			elif result < 0:
 				ctrNotVideo += 1
 
+		time.sleep(delayBtwPagesInSec)
+		sys.stdout.write('.')
+		sys.stdout.flush()
 		page += 1
 
 	if showSummary:
-		print "Parsed search results:\n  day:  {0}\n  pages:  {1}\n  new sitesearch videos:  {2}\n  updated sitesearch videos:  {3}\n  unchanged sitesearch videos:  {4}\n  invalid sitesearch videos:  {5}".format(dayYYYYMMDD, page, ctrInserts, ctrUpdates, ctrNoChange, ctrNotVideo)
+		print "\nParsed search results:\n  day:  {0}\n  pages:  {1}\n  new sitesearch videos:  {2}\n  updated sitesearch videos:  {3}\n  unchanged sitesearch videos:  {4}\n  invalid sitesearch videos:  {5}".format(dayYYYYMMDD, page, ctrInserts, ctrUpdates, ctrNoChange, ctrNotVideo)
+	else:
+		sys.stdout.write(" found {0}/{1}/{2} new/updated/invalid videos.\n".format(ctrInserts, ctrUpdates, ctrNotVideo))
+		sys.stdout.flush()
 
 	return page, ctrInserts, ctrUpdates, ctrNoChange, ctrNotVideo
 	
-		
+
 def getSearchDocsInMonth(dbcSitesearch, year, month, delayBtwDaysInSec = 2):
 	firstWeekDay, lastDay = calendar.monthrange(year, month)
 	firstDay = 1
@@ -153,6 +161,7 @@ def getSearchDocsInMonth(dbcSitesearch, year, month, delayBtwDaysInSec = 2):
 		ctrUpdates += dayUpdates
 		ctrNoChange += dayNoChange
 		ctrNotVideo += dayNotVideo
+		time.sleep(delayBtwDaysInSec)
 
 	print "Parsed search results:\n  pages:  {0}\n  new sitesearch videos:  {1}\n  updated sitesearch videos:  {2}\n  unchanged sitesearch videos:  {3}\n  invalid sitesearch videos:  {4}".format(ctrPages, ctrInserts, ctrUpdates, ctrNoChange, ctrNotVideo)
 
@@ -162,9 +171,35 @@ def getSearchDocsInMonth(dbcSitesearch, year, month, delayBtwDaysInSec = 2):
 def main(argv):
 	dbcDatabase = videoutils.connectToDatabase()
 	dbcSitesearch = dbcDatabase[dbsSitesearch]
-	
-	getSearchDocsInMonth(dbcSitesearch, 2014, 1)
+
+#	getSearchDocsInMonth(dbcSitesearch, 2013, 12)
+#	getSearchDocsInMonth(dbcSitesearch, 2013, 11)
+#	getSearchDocsInMonth(dbcSitesearch, 2013, 10)
+#	getSearchDocsInMonth(dbcSitesearch, 2013, 9)
+#	getSearchDocsInMonth(dbcSitesearch, 2013, 8)
+#	getSearchDocsInMonth(dbcSitesearch, 2013, 7)
+	getSearchDocsInMonth(dbcSitesearch, 2013, 6)
+	getSearchDocsInMonth(dbcSitesearch, 2013, 5)
+	getSearchDocsInMonth(dbcSitesearch, 2013, 4)
+	getSearchDocsInMonth(dbcSitesearch, 2013, 3)
+	getSearchDocsInMonth(dbcSitesearch, 2013, 2)
+	getSearchDocsInMonth(dbcSitesearch, 2013, 1)
+
+	getSearchDocsInMonth(dbcSitesearch, 2012, 12)
+	getSearchDocsInMonth(dbcSitesearch, 2012, 11)
+	getSearchDocsInMonth(dbcSitesearch, 2012, 10)
+	getSearchDocsInMonth(dbcSitesearch, 2012, 9)
+	getSearchDocsInMonth(dbcSitesearch, 2012, 8)
+	getSearchDocsInMonth(dbcSitesearch, 2012, 7)
+	getSearchDocsInMonth(dbcSitesearch, 2012, 6)
+	getSearchDocsInMonth(dbcSitesearch, 2012, 5)
+	getSearchDocsInMonth(dbcSitesearch, 2012, 4)
+	getSearchDocsInMonth(dbcSitesearch, 2012, 3)
+	getSearchDocsInMonth(dbcSitesearch, 2012, 2)
+	getSearchDocsInMonth(dbcSitesearch, 2012, 1)
+
 #	getSearchDocsInDay(dbcSitesearch, "20131231")
+#	getSearchDocsInDay(dbcSitesearch, "20130626", False)
 	return
 
 

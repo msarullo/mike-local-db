@@ -118,8 +118,7 @@ def main(argv):
 	dbcDatabase = videoutils.connectToDatabase()
 	dbcGlassVideo = dbcDatabase[dbsGlassVideo]
 	
-#	loadGlassVideoFromBrokenLinks(dbcDatabase, dbcGlassVideo, 1000, 2)
-	loadGlassVideoFromSitemap(dbcDatabase, dbcGlassVideo, 1000, 2)
+	loadGlassVideoFromBrokenLinks(dbcDatabase, dbcGlassVideo, 100, 2)
 
 
 if __name__ == "__main__":
