@@ -119,7 +119,7 @@ def main(argv):
 	dbcGlassVideo = dbcDatabase[dbsGlassVideo]
 	
 #	loadGlassVideoFromBrokenLinks(dbcDatabase, dbcGlassVideo, 1000, 2)
-	loadGlassVideoFromSitemap(dbcDatabase, dbcGlassVideo, 2, 2)
+	loadGlassVideoFromSitemap(dbcDatabase, dbcGlassVideo, 1000, 2)
 
 
 if __name__ == "__main__":

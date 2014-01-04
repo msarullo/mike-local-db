@@ -7,6 +7,10 @@
 	"glass" : {
 		"videoLinkExpression" :  "",
 		"glassURL" : "" 
-	}
+	},
 
+	"sitesearch" : {
+		"videoLinkExpression" :  "",
+		"searchURL" : "" 
+	}
 }

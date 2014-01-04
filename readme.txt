@@ -8,5 +8,7 @@ These scripts do have some dependencies.
 
 sitemap.py should be run first
 glass.py uses sitemap data to pull information from glass
+sitesearch.py is independent
+
 videoutils.py is a shared utility class
 brokenlinks.py is a shared utility class
