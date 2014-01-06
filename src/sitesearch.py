@@ -20,6 +20,7 @@ dbsSitesearchId = "_id"
 dbsSitesearchDoc = "doc"
 dbsSitesearchCreated = "dteCreated"
 dbsSitesearchUpdated = "dteUpdated"
+dbsSitesearchDocPubDate = "doc.pub_date"
 
 # other global variables
 fmtSearchURL = videoutils.gbSettings['sitesearch']['searchURL']
@@ -143,9 +144,11 @@ def getSearchDocsInDay(dbcSitesearch, dayYYYYMMDD, showSummary = True, delayBtwP
 	return page, ctrInserts, ctrUpdates, ctrNoChange, ctrNotVideo
 	
 
-def getSearchDocsInMonth(dbcSitesearch, year, month, delayBtwDaysInSec = 2):
-	firstWeekDay, lastDay = calendar.monthrange(year, month)
-	firstDay = 1
+def getSearchDocsInMonth(dbcSitesearch, year, month, firstDay = 1, lastDay = 0, delayBtwDaysInSec = 2):
+	if lastDay < 1:
+		firstWeekDay, daysInMonth = calendar.monthrange(year, month)
+		lastDay = daysInMonth
+
 	print "Searching for video from {0}-{1:02d}-{2:02d} to {0}-{1:02d}-{3:02d}...".format(year, month, firstDay, lastDay)
 
 	ctrPages = 0
@@ -172,31 +175,20 @@ def main(argv):
 	dbcDatabase = videoutils.connectToDatabase()
 	dbcSitesearch = dbcDatabase[dbsSitesearch]
 
-#	getSearchDocsInMonth(dbcSitesearch, 2013, 12)
-#	getSearchDocsInMonth(dbcSitesearch, 2013, 11)
-#	getSearchDocsInMonth(dbcSitesearch, 2013, 10)
-#	getSearchDocsInMonth(dbcSitesearch, 2013, 9)
-#	getSearchDocsInMonth(dbcSitesearch, 2013, 8)
-#	getSearchDocsInMonth(dbcSitesearch, 2013, 7)
-	getSearchDocsInMonth(dbcSitesearch, 2013, 6)
-	getSearchDocsInMonth(dbcSitesearch, 2013, 5)
-	getSearchDocsInMonth(dbcSitesearch, 2013, 4)
-	getSearchDocsInMonth(dbcSitesearch, 2013, 3)
-	getSearchDocsInMonth(dbcSitesearch, 2013, 2)
-	getSearchDocsInMonth(dbcSitesearch, 2013, 1)
+#	getSearchDocsInMonth(dbcSitesearch, 2006, 12)
+#	getSearchDocsInMonth(dbcSitesearch, 2006, 11)
+#	getSearchDocsInMonth(dbcSitesearch, 2006, 10)
+#	getSearchDocsInMonth(dbcSitesearch, 2006, 9)
+	getSearchDocsInMonth(dbcSitesearch, 2006, 8)
+	getSearchDocsInMonth(dbcSitesearch, 2006, 7)
+	getSearchDocsInMonth(dbcSitesearch, 2006, 6)
+	getSearchDocsInMonth(dbcSitesearch, 2006, 5)
+	getSearchDocsInMonth(dbcSitesearch, 2006, 4)
+	getSearchDocsInMonth(dbcSitesearch, 2006, 3)
+	getSearchDocsInMonth(dbcSitesearch, 2006, 2)
+	getSearchDocsInMonth(dbcSitesearch, 2006, 1)
 
-	getSearchDocsInMonth(dbcSitesearch, 2012, 12)
-	getSearchDocsInMonth(dbcSitesearch, 2012, 11)
-	getSearchDocsInMonth(dbcSitesearch, 2012, 10)
-	getSearchDocsInMonth(dbcSitesearch, 2012, 9)
-	getSearchDocsInMonth(dbcSitesearch, 2012, 8)
-	getSearchDocsInMonth(dbcSitesearch, 2012, 7)
-	getSearchDocsInMonth(dbcSitesearch, 2012, 6)
-	getSearchDocsInMonth(dbcSitesearch, 2012, 5)
-	getSearchDocsInMonth(dbcSitesearch, 2012, 4)
-	getSearchDocsInMonth(dbcSitesearch, 2012, 3)
-	getSearchDocsInMonth(dbcSitesearch, 2012, 2)
-	getSearchDocsInMonth(dbcSitesearch, 2012, 1)
+	getSearchDocsInMonth(dbcSitesearch, 2014, 1, 1, 7)
 
 #	getSearchDocsInDay(dbcSitesearch, "20131231")
 #	getSearchDocsInDay(dbcSitesearch, "20130626", False)

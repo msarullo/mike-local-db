@@ -124,6 +124,30 @@ def processSitemapVideosForLinks(dbcSitemap):
 	for line in sitemapFile:
 		ctrLines += 1
 		line = line.strip()
+
+		'''
+		NEED TO START CAPTURING:
+		<url>
+		<loc>http://www.nytimes.com/video/2014/01/03/world/africa/100000002632601/a-desperate-river-crossing.html</loc>
+		<video:video>
+		<video:player_loc allow_embed="no"><![CDATA[http://c.brightcove.com/services/viewer/federated_f9?&width=500&height=281&flashID=nytd_video_BrightcoveExperience&%40videoPlayer=ref%3A100000002632601&playerID=1656678357001&bgcolor=%23000000&publisherID=1749339200&isVid=true&isUI=true&wmode=transparent&dynamicStreaming=true&optimizedContentLoad=true&AllowScriptAccess=always&useExternalAdControls=true&autoStart=false&includeAPI=false&quality=high&convivaID=c3.NYTimes&convivaEnabled=true&debuggerID=&showNoContentMessage]]></video:player_loc>
+		<video:thumbnail_loc>http://www.nytimes.com/images/2014/01/03/multimedia/south-sudan-refugee/south-sudan-refugee-thumbStandard.jpg</video:thumbnail_loc>
+		<video:title>A Desperate River Crossing</video:title>
+		<video:description>Residents of Bor, a city in the Republic of South Sudan, fled deadly violence there by taking ferries across the White Nile to Awerial, where an estimated 76,000 displaced people are stranded.</video:description>
+		<video:publication_date>2014-01-04T02:36:47+00:00</video:publication_date>
+		<video:duration>139</video:duration>
+		<video:tag>Refugees and Displaced Persons</video:tag>
+		<video:tag>Civilian Casualties</video:tag>
+		<video:tag>Kulish, Nicholas</video:tag>
+		<video:tag>Bor (South Sudan)</video:tag>
+		<video:tag>Juba (South Sudan)</video:tag>
+		<video:tag>South Sudan</video:tag>
+		<video:tag>Humanitarian Aid</video:tag>
+		<video:tag>Doctors Without Borders</video:tag>
+		<video:category>world</video:category>
+		</video:video>
+		</url>
+		'''
 		
 		# look for location fields with video links
 		lineMatch = reSitemapLink.match(line)

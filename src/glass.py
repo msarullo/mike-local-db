@@ -22,6 +22,7 @@ dbsGlassVideoId = "_id"
 dbsGlassVideoContent = "content"
 dbsGlassVideoCreated = "dteCreated"
 dbsGlassVideoUpdated = "dteUpdated"
+dbsGlassVideoContentPubDate = "content.cms.video.publication_dt"
 
 # other global variables
 fmtGlassURL = videoutils.gbSettings['glass']['glassURL']
