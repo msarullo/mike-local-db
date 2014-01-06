@@ -5,6 +5,7 @@ import pymongo
 import datetime
 import time
 import json
+import bson
 
 import videoutils
 import sitemap
@@ -23,6 +24,18 @@ dbsGlassVideoContent = "content"
 dbsGlassVideoCreated = "dteCreated"
 dbsGlassVideoUpdated = "dteUpdated"
 dbsGlassVideoContentPubDate = "content.cms.video.publication_dt"
+
+dbsStatsMapper = bson.code.Code("""
+		function () {
+			var key = this._id;
+			var value = {
+				glassvideo: {
+					pubdate:  this.content.cms.video.publication_dt
+				}
+			};
+			emit( key, value );
+		}
+	""")
 
 # other global variables
 fmtGlassURL = videoutils.gbSettings['glass']['glassURL']

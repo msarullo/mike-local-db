@@ -2,9 +2,11 @@ import sys
 import re
 import pymongo
 import datetime
-import videoutils
 import urllib2
 import gzip
+import bson
+
+import videoutils
 
 # global regular expressions
 reVideoLink = re.compile(videoutils.gbSettings['sitemap']['videoLinkExpression'])
@@ -20,6 +22,19 @@ dbsSitemapId = "_id"
 dbsSitemapUrls = "urls"
 dbsSitemapCreated = "dteCreated"
 dbsSitemapUpdated = "dteUpdated"
+
+dbsStatsMapper = bson.code.Code("""
+		function () {
+			var key = this._id;
+			var value = {
+				sitemap: {
+					pubdate:  this.dteCreated
+				}
+			};
+			emit( key, value );
+		}
+	""")
+
 
 # other global variables
 stSitemapURL = videoutils.gbSettings['sitemap']['sitemapURL']

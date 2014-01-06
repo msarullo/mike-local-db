@@ -1,5 +1,6 @@
 import sys
 import pymongo
+import bson
 
 import videoutils
 import sitemap
@@ -13,6 +14,15 @@ dbsCollectionPubDateFields = {
 	glass.dbsGlassVideo: glass.dbsGlassVideoContentPubDate,
 	sitesearch.dbsSitesearch: sitesearch.dbsSitesearchDocPubDate
 }
+dbsCollectionMappers = {
+	sitemap.dbsSitemap: sitemap.dbsStatsMapper,
+	glass.dbsGlassVideo: glass.dbsStatsMapper,
+	sitesearch.dbsSitesearch: sitesearch.dbsStatsMapper
+}
+
+dbsVideoStats = "videostats"
+dbsVideoStatsPubDate = "pubdate"
+
 
 # functions
 def helperFlattenDict(dd, separator='.', prefix=''):
@@ -42,8 +52,10 @@ def findVideoField(dbcDatabase, collection, videoField, fieldSort = None):
 
 	return "QUERY FAILED"
 
+
 def getOldestPubDate(dbcDatabase, collection, pubDateField):
 	return findVideoField(dbcDatabase, collection, pubDateField, 1)
+
 
 def getNewestPubDate(dbcDatabase, collection, pubDateField):
 	return findVideoField(dbcDatabase, collection, pubDateField, -1)
@@ -71,9 +83,41 @@ def printTotals(dbcDatabase):
 		print ','.join(collectionData)
 
 
+def analyzeVideoCollections(dbcDatabase):
+	dbcVideoStats = dbcDatabase[dbsVideoStats]
+	dbcVideoStats.remove()
+	
+	for collectionName in dbsCollectionMappers.keys():
+		print "Analyzing collection {0}...".format(collectionName)
+		
+		# execute a map-reduce on this collection into video-stats
+		mapFunc = dbsCollectionMappers[collectionName]
+
+		reduceFunc = bson.code.Code("""
+				function(key, values) {
+					var reducedObject = { };
+				
+					values.forEach( function(value) {
+						for (collection in value) {
+							reducedObject[collection] = value[collection];
+						}
+					});
+				
+					return reducedObject;
+				}
+			""")
+		
+		dbcDatabase[collectionName].map_reduce(mapFunc, reduceFunc, { 'reduce': dbsVideoStats})
+
+
+def printSetComparisons(dbcDatabase):
+	analyzeVideoCollections(dbcDatabase)
+
+
 def main(argv):
 	dbcDatabase = videoutils.connectToDatabase()
-	printTotals(dbcDatabase)
+#	printTotals(dbcDatabase)
+	printSetComparisons(dbcDatabase)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

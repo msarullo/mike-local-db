@@ -6,6 +6,7 @@ import httplib2
 import json
 import calendar
 import time
+import bson
 
 import videoutils
 
@@ -21,6 +22,19 @@ dbsSitesearchDoc = "doc"
 dbsSitesearchCreated = "dteCreated"
 dbsSitesearchUpdated = "dteUpdated"
 dbsSitesearchDocPubDate = "doc.pub_date"
+
+dbsStatsMapper = bson.code.Code("""
+		function () {
+			var key = this._id;
+			var value = {
+				sitesearch: {
+					pubdate:  this.doc.pub_date
+				}
+			};
+			emit( key, value );
+		}
+	""")
+
 
 # other global variables
 fmtSearchURL = videoutils.gbSettings['sitesearch']['searchURL']
