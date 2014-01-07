@@ -12,5 +12,9 @@
 	"sitesearch" : {
 		"videoLinkExpression" :  "",
 		"searchURL" : "" 
-	}
+	},
+
+        "ice" : {
+                "playlistURL" : ""
+        }
 }
