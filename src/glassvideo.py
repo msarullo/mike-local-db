@@ -9,6 +9,7 @@ import bson
 
 import videoutils
 import sitemap
+import sitesearch
 import brokenlinks
 
 
@@ -27,15 +28,26 @@ dbsGlassVideoContentPubDate = "content.cms.video.publication_dt"
 
 dbsStatsMapper = bson.code.Code("""
 		function () {
+			var timebits = /^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})\.([0-9]{3})\.([A-Z]{3})$/;
+		    var m = timebits.exec(this.content.cms.video.publication_dt);
+		    var resultDateStr;
+		    if (m) {
+		    	resultDateStr = m[2]+'-'+m[3]+'-'+m[1]+' '+m[4]+':'+m[5]+':'+m[6]+' '+m[8];
+		    }
+		
 			var key = this._id;
 			var value = {
 				glassvideo: {
-					pubdate:  this.content.cms.video.publication_dt
+					status: 1,
+					pubdate:  new Date(resultDateStr),
 				}
 			};
 			emit( key, value );
 		}
 	""")
+#	pubdate_str: resultDateStr,
+#	pubdate_org: this.content.cms.video.publication_dt
+
 
 # other global variables
 fmtGlassURL = videoutils.gbSettings['glass']['glassURL']
@@ -127,13 +139,26 @@ def loadGlassVideoFromBrokenLinks(dbcDatabase, dbcGlassVideo, maxGlassRequests =
 	loadGlassVideos(dbcDatabase, dbcGlassVideo, 'brokenlinks', newVideoIds, maxGlassRequests, delayBtwReqInSec)
 
 
+def loadGlassVideoFromSiteSearch(dbcDatabase, dbcGlassVideo, maxGlassRequests = 100, delayBtwReqInSec = 2):
+	print "Looking for videos to pull from site search..."
+	sitesearchIds = sitesearch.getVideoIdsFromSiteSearch(dbcDatabase)
+	glassVideoIds = getVideoIdsFromGlassVideos(dbcDatabase)
+	brokenLinkIds = brokenlinks.getVideoIdsFromBrokenLinks(dbcDatabase, 'sitesearch')
+
+	newVideoIds = (sitesearchIds - glassVideoIds) - brokenLinkIds
+
+	print "Found:\n  sitesearch vidoes:  {0}\n  glass videos:  {1}\n  broken sitesearch videos:  {2}\n  new videos to query glass for:  {3}".format(len(sitesearchIds), len(glassVideoIds), len(brokenLinkIds), len(newVideoIds))
+	loadGlassVideos(dbcDatabase, dbcGlassVideo, 'sitesearch', newVideoIds, maxGlassRequests, delayBtwReqInSec)
+
+
 # main, used for testing
 def main(argv):
 	dbcDatabase = videoutils.connectToDatabase()
 	dbcGlassVideo = dbcDatabase[dbsGlassVideo]
 	
-	loadGlassVideoFromBrokenLinks(dbcDatabase, dbcGlassVideo, 100, 2)
-
+	loadGlassVideoFromSitemap(dbcDatabase, dbcGlassVideo, 100)
+	loadGlassVideoFromSiteSearch(dbcDatabase, dbcGlassVideo, 100)
+#	loadGlassVideoFromBrokenLinks(dbcDatabase, dbcGlassVideo, 100, 2)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

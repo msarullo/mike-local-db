@@ -4,7 +4,7 @@ import datetime
 import videoutils
 
 # global source list
-enumBrokenLinkSources = frozenset(["sitemap", "brokenlinks"])
+enumBrokenLinkSources = frozenset(["sitemap", "sitesearch", "brokenlinks"])
 
 # global database connection data
 dbsBrokenLinks = "brokenlinks"

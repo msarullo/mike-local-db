@@ -28,7 +28,8 @@ dbsStatsMapper = bson.code.Code("""
 			var key = this._id;
 			var value = {
 				sitesearch: {
-					pubdate:  this.doc.pub_date
+					status: 1,
+					pubdate:  new Date(this.doc.pub_date)
 				}
 			};
 			emit( key, value );
@@ -43,6 +44,13 @@ docPubDate = 'pub_date'
 docPubDateFormat = '%Y-%m-%dT%H:%M:%SZ'
 
 # functions
+def getVideoIdsFromSiteSearch(dbcDatabase):
+	dbcSitesearch = dbcDatabase[dbsSitesearch]
+	query = { dbsSitesearchId: { "$ne": 0 } }
+	fields = { dbsSitesearchId: 1 }
+	documents = dbcSitesearch.find(query, fields)
+	return videoutils.extractFieldFromDocuments(dbsSitesearchId, documents)
+
 def getVideoIdFromSearchDoc(searchDoc):
 	link = searchDoc[docWebURL]
 	mo = reVideoLink.match(link)
@@ -189,6 +197,9 @@ def main(argv):
 	dbcDatabase = videoutils.connectToDatabase()
 	dbcSitesearch = dbcDatabase[dbsSitesearch]
 
+	getSearchDocsInMonth(dbcSitesearch, 2014, 1, 1, 7)
+	return
+
 #	getSearchDocsInMonth(dbcSitesearch, 2006, 12)
 #	getSearchDocsInMonth(dbcSitesearch, 2006, 11)
 #	getSearchDocsInMonth(dbcSitesearch, 2006, 10)
@@ -201,8 +212,6 @@ def main(argv):
 	getSearchDocsInMonth(dbcSitesearch, 2006, 3)
 	getSearchDocsInMonth(dbcSitesearch, 2006, 2)
 	getSearchDocsInMonth(dbcSitesearch, 2006, 1)
-
-	getSearchDocsInMonth(dbcSitesearch, 2014, 1, 1, 7)
 
 #	getSearchDocsInDay(dbcSitesearch, "20131231")
 #	getSearchDocsInDay(dbcSitesearch, "20130626", False)
