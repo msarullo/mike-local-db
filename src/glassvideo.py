@@ -48,6 +48,19 @@ dbsStatsMapper = bson.code.Code("""
 #	pubdate_str: resultDateStr,
 #	pubdate_org: this.content.cms.video.publication_dt
 
+dbsPlaylistMapper = bson.code.Code("""
+		function() {
+			var playlists = this.content.cms.video.playlists;
+			var vId = this._id;
+			playlists.forEach( function(playlist) {
+				var value = {
+					glassvideo: [ vId ]
+				};
+				emit( playlist.id.value, value )
+			});
+		}
+	""")
+
 
 # other global variables
 fmtGlassURL = videoutils.gbSettings['glass']['glassURL']

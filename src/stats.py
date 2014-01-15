@@ -1,11 +1,13 @@
 import sys
 import pymongo
 import bson
+import json
 
 import videoutils
 import sitemap
 import glassvideo
 import sitesearch
+import iceplaylist
 
 # report on refers???
 
@@ -16,6 +18,10 @@ dbsCollectionMappers = {
 	glassvideo.dbsGlassVideo: glassvideo.dbsStatsMapper,
 	sitesearch.dbsSitesearch: sitesearch.dbsStatsMapper
 }
+dbsPlaylistMappers = {
+	glassvideo.dbsGlassVideo: glassvideo.dbsPlaylistMapper,
+#	sitesearch.dbsSitesearch: sitesearch.dbsPlaylistMapper
+}
 dbsCollectionSetsForComparison = {
 	"Site map videos in Glass": [ sitemap.dbsSitemap, glassvideo.dbsGlassVideo ],
 	"Site search videos in Glass": [ sitesearch.dbsSitesearch, glassvideo.dbsGlassVideo ],
@@ -23,8 +29,12 @@ dbsCollectionSetsForComparison = {
 	"Glass videos in site search": [ glassvideo.dbsGlassVideo, sitesearch.dbsSitesearch ]
 }
 
-dbsVideoStats = "videostats"
+dbsVideoStats = "statsvideo"
 dbsVideoStatsPubDate = "pubdate"
+
+dbsPlaylistVideos = "statsplaylistvideo"
+
+dbsUrlStats = "statsurl"
 
 
 # functions
@@ -33,7 +43,7 @@ def analyzeVideoCollections(dbcDatabase):
 	dbcVideoStats.remove()
 	
 	for collectionName in dbsCollectionMappers.keys():
-		print "Analyzing {0} collection...".format(collectionName)
+		print "Analyzing videos in collection:  {0}".format(collectionName)
 		
 		# execute a map-reduce on this collection into video-stats
 		mapFunc = dbsCollectionMappers[collectionName]
@@ -52,8 +62,35 @@ def analyzeVideoCollections(dbcDatabase):
 				}
 			""")
 		
-		dbcDatabase[collectionName].map_reduce(mapFunc, reduceFunc, { 'reduce': dbsVideoStats})
+		dbcDatabase[collectionName].map_reduce(mapFunc, reduceFunc, { 'reduce': dbsVideoStats })
 
+
+def analyzePlaylistsVideos(dbcDatabase):
+	dbcPlaylistVideos = dbcDatabase[dbsPlaylistVideos]
+	dbcPlaylistVideos.remove()
+
+	for collectionName in dbsPlaylistMappers.keys():
+		print "Analyzing playlists in collection:  {0}".format(collectionName)
+		
+		# execute a map-reduce on this collection into video-stats
+		mapFunc = dbsPlaylistMappers[collectionName]
+
+		reduceFunc = bson.code.Code("""
+				function(key, values) {
+					var reducedObject = { """+collectionName+""": [ ] };
+				
+					values.forEach( function(value) {
+						value."""+collectionName+""".forEach( function(videoId) {
+							reducedObject."""+collectionName+""".push(videoId);
+						});
+					});
+				
+					return reducedObject;
+				}
+			""")
+		
+		dbcDatabase[collectionName].map_reduce(mapFunc, reduceFunc, { 'reduce': dbsPlaylistVideos })
+	
 
 def printTotals(dbcVideoStats):
 	print "\nCollection Name, Total Videos, Oldest Pub Date, Newest Pub Date"
@@ -61,12 +98,11 @@ def printTotals(dbcVideoStats):
 	for collection in dbsCollections:
 		result = dbcVideoStats.aggregate([
 				{ "$match": { "value.{0}.status".format(collection): 1 } },
-				{ "$sort": { "value.{0}.pubdate".format(collection): 1 } },
  				{ "$group": {
 					"_id": "videocollections",
 					"count": { "$sum": "$value.{0}.status".format(collection) },
-					"oldest": { "$first": "$value.{0}.pubdate".format(collection) },
-					"newest": { "$last": "$value.{0}.pubdate".format(collection) }
+					"oldest": { "$min": "$value.{0}.pubdate".format(collection) },
+					"newest": { "$max": "$value.{0}.pubdate".format(collection) }
 				} }
 			])
 
@@ -91,14 +127,173 @@ def printSetComparisons(dbcVideoStats):
 		print ','.join([ comparisonName, str(result['counta']), str(result['countb']), str(result['counta'] - result['countb']) ])
 
 
+def analyzeSitemapUrlStats(dbcDatabase):
+	dbcDatabase[dbsUrlStats].remove()
+
+	mapFunc = bson.code.Code("""
+			function () {
+				var urlPattern = /^http:\/\/([a-zA-Z]+)\.nytimes\.com\/(.*)\/(.*)\.html$/;
+				var datePattern = /.*\/(20[01][0-9])\/([01][0-9])\/([0-3][0-9])\/.*/;
+				var playerPattern = /.*<video\:player_loc( allow_embed="(yes|no)")?>(.*)<\/video\:player_loc>.*/;
+				var thumbPattern = /.*<video\:thumbnail_loc>(.*)<\/video\:thumbnail_loc>.*/;
+				
+				var videoId = this._id;
+				var urls = this.urls;
+				var xmls = this.xmls;
+				for (var idx = 0; idx < urls.length; idx++) {
+					var url = urls[idx];
+					var sitemapXML = xmls[idx];
+
+					var sitemapTagsHash = { }
+					var starts = sitemapXML.split("<");
+					starts.forEach( function(start) {
+						if ('/' == start.charAt(0)) {
+							var tag = start.split(">", 1);
+							sitemapTagsHash[tag[0].substr(1)] = true;
+						}
+					});
+					
+					var sitemapTagsSet = new Array();
+					for (var tag in sitemapTagsHash)
+						sitemapTagsSet.push(tag);
+					
+					var playerMatch = playerPattern.exec(sitemapXML);
+					var thumbMatch = thumbPattern.exec(sitemapXML);
+					var urlMatch = urlPattern.exec(url);
+					var dateMatch = datePattern.exec(url);
+					
+					var normalizedPath;
+					if (urlMatch) {
+						normalizedPath = urlMatch[2].replace(videoId, "")
+						if (dateMatch) {
+							datePath = '/' + dateMatch[1] + '/' + dateMatch[2] + '/' + dateMatch[3]
+							normalizedPath = normalizedPath.replace(datePath, "")
+						}
+					}
+
+					var value = {
+						'videoId': videoId,
+						'url': url,
+						'urlMiss': (! urlMatch),
+						'urlPartSubDomain': (urlMatch ? urlMatch[1] : ''),
+						'urlPartPath': (urlMatch ? urlMatch[2] : ''),
+						'urlPartSlug': (urlMatch ? urlMatch[3] : ''),
+						'urlPartNormalizedPath': normalizedPath,
+						'dateMiss': (! dateMatch),
+						'datePartYear': (dateMatch ? dateMatch[1] : ''),
+						'datePartMonth': (dateMatch ? dateMatch[2] : ''),
+						'datePartDay': (dateMatch ? dateMatch[3] : ''),
+						'sitemapTags': sitemapTagsSet,
+						'playerLoc': (playerMatch ? playerMatch[3] : ''),
+						'playerEmbed': (playerMatch ? playerMatch[2] : ''),
+						'thumbLoc': (thumbMatch ? thumbMatch[1] : '')
+					};
+					
+					emit( url, value );
+				};
+			}
+		""")
+
+	reduceFunc = bson.code.Code("""
+			function(key, values) {
+				return values;
+			}
+		""")
+	
+	dbcDatabase[sitemap.dbsSitemap].map_reduce(mapFunc, reduceFunc, { 'reduce': dbsUrlStats })
+	
+
+def printSitemapUrlStats(dbcDatabase):
+	dbcUrlStats = dbcDatabase[dbsUrlStats]
+	urlStats = { }
+	urlStats['totalUrls'] = dbcUrlStats.count()
+
+
+	result = dbcUrlStats.aggregate([
+			{ "$group": {
+				"_id": "$value.sitemapTags",
+				"count": { "$sum": 1 },
+			} },
+		])
+	urlStats['tmp'] = result['result']
+
+	print json.dumps(urlStats, sort_keys=True, indent=4)
+	return
+
+
+	result = dbcUrlStats.aggregate([
+			{ "$group": {
+				"_id": "$value.urlMiss",
+				"count": { "$sum": 1 },
+			} }
+		])
+	urlStats['invalidVideoUrls'] = result['result']
+
+	result = dbcUrlStats.aggregate([
+			{ "$group": {
+				"_id": "$value.urlPartSubDomain",
+				"count": { "$sum": 1 },
+			} }
+		])
+	urlStats['urlSubdomains'] = result['result']
+	
+	result = dbcUrlStats.aggregate([
+			{ "$group": {
+				"_id": "$value.urlPartNormalizedPath",
+				"count": { "$sum": 1 },
+			} }
+		])
+	urlStats['urlPaths'] = result['result']
+	
+	result = dbcUrlStats.aggregate([
+			{ "$group": {
+				"_id": "$value.datePartYear",
+				"count": { "$sum": 1 },
+			} }
+		])
+	urlStats['urlYears'] = result['result']
+
+	result = dbcUrlStats.aggregate([
+			{ "$group": {
+				"_id": "$value.videoId",
+				"count": { "$sum": 1 },
+			} },
+			{ "$group": {
+				"_id": "$count",
+				"numberOfVideosAtThisRate": { "$sum": 1 },
+			} },
+		])
+	urlStats['freqencyOfUrlsPerVideoId'] = result['result']
+
+	result = dbcUrlStats.aggregate([
+			{ "$group": {
+				"_id": "$value.sitemapTags",
+				"count": { "$sum": 1 },
+			} },
+		])
+	urlStats['sitemapEntryProperties'] = result['result']
+
+	print json.dumps(urlStats, sort_keys=True, indent=4)
+	
+
+def printPlaylistInfo(dbcPlaylistVideos):
+	print "\nPlaylist Data:Set,Min Videos,Max Videos, Avg Videos"
+	print "FINISH ME! probably need a map reduce to count the size of the glass video array!"
+
+
 def main(argv):
 	dbcDatabase = videoutils.connectToDatabase()
 	dbcVideoStats = dbcDatabase[dbsVideoStats]
+	dbcPlaylistVideos = dbcDatabase[dbsPlaylistVideos]
 
-	analyzeVideoCollections(dbcDatabase)
+#	analyzeVideoCollections(dbcDatabase)
+#	analyzePlaylistsVideos(dbcDatabase)
+	analyzeSitemapUrlStats(dbcDatabase)
 
-	printTotals(dbcVideoStats)
-	printSetComparisons(dbcVideoStats)
+#	printTotals(dbcVideoStats)
+#	printSetComparisons(dbcVideoStats)
+#	printPlaylistInfo(dbcPlaylistVideos)
+	printSitemapUrlStats(dbcDatabase)
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

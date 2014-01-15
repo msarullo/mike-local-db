@@ -36,7 +36,6 @@ dbsStatsMapper = bson.code.Code("""
 		}
 	""")
 
-
 # other global variables
 fmtSearchURL = videoutils.gbSettings['sitesearch']['searchURL']
 docWebURL = 'web_url'
@@ -197,7 +196,7 @@ def main(argv):
 	dbcDatabase = videoutils.connectToDatabase()
 	dbcSitesearch = dbcDatabase[dbsSitesearch]
 
-	getSearchDocsInMonth(dbcSitesearch, 2014, 1, 1, 7)
+	getSearchDocsInMonth(dbcSitesearch, 2014, 1, 5, 11)
 	return
 
 #	getSearchDocsInMonth(dbcSitesearch, 2006, 12)
