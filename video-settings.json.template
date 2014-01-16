@@ -16,5 +16,10 @@
 
         "ice" : {
                 "playlistURL" : ""
-        }
+        },
+
+	"cse" : {
+		"videoLinkExpression" :  "",
+		"cseURL" : ""
+	}
 }

@@ -5,6 +5,7 @@ import datetime
 import urllib2
 import gzip
 import bson
+import requests
 
 import videoutils
 
@@ -28,11 +29,26 @@ dbsSitemapUpdated = "dteUpdated"
 
 dbsStatsMapper = bson.code.Code("""
 		function () {
+			var thumbPattern = /.*<video\:thumbnail_loc>(.*)<\/video\:thumbnail_loc>.*/;
+
 			var key = this._id;
+			var xmls = this.xmls;
+			var sitemapUrls = this.urls;
+
+			var thumbsUrls = new Array();
+			xmls.forEach( function(xml) {
+				var thumbMatch = thumbPattern.exec(xml);
+				if (thumbMatch) {
+					thumbsUrls.push(thumbMatch[1]);
+				}
+			});
+			
 			var value = {
 				sitemap: {
 					status: 1,
-					pubdate:  this.latestPubDate
+					pubdate:  this.latestPubDate,
+					thumbnails: thumbsUrls,
+					urls: sitemapUrls
 				}
 			};
 			emit( key, value );
@@ -230,6 +246,15 @@ def main(argv):
 	
 	downloadSitemapVideos()
 	processSitemapVideosForLinks(dbcSitemap)
+
+#	url = 'http://www.nytimes.com/images/2012/12/05/arts/video-damon-timestalks/video-damon-timestalks-thumbStandard.jpg'
+#	url = 'http://www.nytimes.com/video/2011/02/28/movies/100000000670754/oscars-sound.html'
+#	resp = requests.head(url)
+#	print url
+#	print resp.headers
+#	print resp.content
+#	print resp.raw
+
 	return
 
 

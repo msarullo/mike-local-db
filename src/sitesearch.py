@@ -26,10 +26,14 @@ dbsSitesearchDocPubDate = "doc.pub_date"
 dbsStatsMapper = bson.code.Code("""
 		function () {
 			var key = this._id;
+			var searchUrls = new Array();
+			searchUrls.push( this.doc.web_url );
+			
 			var value = {
 				sitesearch: {
 					status: 1,
-					pubdate:  new Date(this.doc.pub_date)
+					pubdate:  new Date(this.doc.pub_date),
+					urls:  searchUrls
 				}
 			};
 			emit( key, value );
@@ -196,8 +200,8 @@ def main(argv):
 	dbcDatabase = videoutils.connectToDatabase()
 	dbcSitesearch = dbcDatabase[dbsSitesearch]
 
-	getSearchDocsInMonth(dbcSitesearch, 2014, 1, 5, 11)
-	return
+	getSearchDocsInMonth(dbcSitesearch, 2014, 1, 9, 17)
+#	return
 
 #	getSearchDocsInMonth(dbcSitesearch, 2006, 12)
 #	getSearchDocsInMonth(dbcSitesearch, 2006, 11)
@@ -211,6 +215,9 @@ def main(argv):
 	getSearchDocsInMonth(dbcSitesearch, 2006, 3)
 	getSearchDocsInMonth(dbcSitesearch, 2006, 2)
 	getSearchDocsInMonth(dbcSitesearch, 2006, 1)
+
+	getSearchDocsInMonth(dbcSitesearch, 2005, 12)
+	getSearchDocsInMonth(dbcSitesearch, 2005, 11)
 
 #	getSearchDocsInDay(dbcSitesearch, "20131231")
 #	getSearchDocsInDay(dbcSitesearch, "20130626", False)

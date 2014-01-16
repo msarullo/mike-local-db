@@ -36,10 +36,23 @@ dbsStatsMapper = bson.code.Code("""
 		    }
 		
 			var key = this._id;
+			var glassUrls = new Array();
+			glassUrls.push( this.content.url );
+			
+			var thumbsSubDomain = this.content.cms.video.sub_domain;
+			var thumbs = this.content.cms.video.thumbs;
+			var thumbsUrls = new Array();
+			thumbs.forEach( function (thumb) {
+				if (thumb['content'])
+					thumbsUrls.push(thumbsSubDomain + '/' + thumb['content']);
+			});
+			
 			var value = {
 				glassvideo: {
 					status: 1,
 					pubdate:  new Date(resultDateStr),
+					thumbnails: thumbsUrls,
+					urls: glassUrls
 				}
 			};
 			emit( key, value );
@@ -169,8 +182,8 @@ def main(argv):
 	dbcDatabase = videoutils.connectToDatabase()
 	dbcGlassVideo = dbcDatabase[dbsGlassVideo]
 	
-	loadGlassVideoFromSitemap(dbcDatabase, dbcGlassVideo, 100)
-	loadGlassVideoFromSiteSearch(dbcDatabase, dbcGlassVideo, 100)
+	loadGlassVideoFromSitemap(dbcDatabase, dbcGlassVideo, 1000)
+	loadGlassVideoFromSiteSearch(dbcDatabase, dbcGlassVideo, 1000)
 #	loadGlassVideoFromBrokenLinks(dbcDatabase, dbcGlassVideo, 100, 2)
 
 if __name__ == "__main__":

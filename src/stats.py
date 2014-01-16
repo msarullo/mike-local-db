@@ -8,6 +8,7 @@ import sitemap
 import glassvideo
 import sitesearch
 import iceplaylist
+import csesearch
 
 # report on refers???
 
@@ -16,7 +17,8 @@ dbsCollections = sorted([ sitemap.dbsSitemap, glassvideo.dbsGlassVideo, sitesear
 dbsCollectionMappers = {
 	sitemap.dbsSitemap: sitemap.dbsStatsMapper,
 	glassvideo.dbsGlassVideo: glassvideo.dbsStatsMapper,
-	sitesearch.dbsSitesearch: sitesearch.dbsStatsMapper
+	sitesearch.dbsSitesearch: sitesearch.dbsStatsMapper,
+	csesearch.dbsCSEVideo: csesearch.dbsStatsMapper
 }
 dbsPlaylistMappers = {
 	glassvideo.dbsGlassVideo: glassvideo.dbsPlaylistMapper,
@@ -136,6 +138,7 @@ def analyzeSitemapUrlStats(dbcDatabase):
 				var datePattern = /.*\/(20[01][0-9])\/([01][0-9])\/([0-3][0-9])\/.*/;
 				var playerPattern = /.*<video\:player_loc( allow_embed="(yes|no)")?>(.*)<\/video\:player_loc>.*/;
 				var thumbPattern = /.*<video\:thumbnail_loc>(.*)<\/video\:thumbnail_loc>.*/;
+				var pubDatePattern = /.*<video\:publication_date>(20[01][0-9])-([01][0-9])-([0-3][0-9])T.*<\/video\:publication_date>.*/;
 				
 				var videoId = this._id;
 				var urls = this.urls;
@@ -159,6 +162,7 @@ def analyzeSitemapUrlStats(dbcDatabase):
 					
 					var playerMatch = playerPattern.exec(sitemapXML);
 					var thumbMatch = thumbPattern.exec(sitemapXML);
+					var pubDateMatch = pubDatePattern.exec(sitemapXML);
 					var urlMatch = urlPattern.exec(url);
 					var dateMatch = datePattern.exec(url);
 					
@@ -183,6 +187,9 @@ def analyzeSitemapUrlStats(dbcDatabase):
 						'datePartYear': (dateMatch ? dateMatch[1] : ''),
 						'datePartMonth': (dateMatch ? dateMatch[2] : ''),
 						'datePartDay': (dateMatch ? dateMatch[3] : ''),
+						'pubDateYear': (pubDateMatch ? pubDateMatch[1] : ''),
+						'pubDateMonth': (pubDateMatch ? pubDateMatch[2] : ''),
+						'pubDateDay': (pubDateMatch ? pubDateMatch[3] : ''),
 						'sitemapTags': sitemapTagsSet,
 						'playerLoc': (playerMatch ? playerMatch[3] : ''),
 						'playerEmbed': (playerMatch ? playerMatch[2] : ''),
@@ -203,23 +210,32 @@ def analyzeSitemapUrlStats(dbcDatabase):
 	dbcDatabase[sitemap.dbsSitemap].map_reduce(mapFunc, reduceFunc, { 'reduce': dbsUrlStats })
 	
 
+def printSitemapDailyStats(dbcDatabase):
+	dbcUrlStats = dbcDatabase[dbsUrlStats]
+
+	result = dbcUrlStats.aggregate([
+			{ "$project": {
+				"_id": 1,
+				"value": 1,
+				"multimedia": { "$cond": [ { "$strcasecmp": ["$value.urlPartNormalizedPath", "video/multimedia/"] }, 0, 1 ] }
+			} },
+			{ "$group": {
+				"_id": { "$concat": ["$value.pubDateYear", "$value.pubDateMonth", "$value.pubDateDay"] },
+				"multimedia": { "$sum": "$multimedia" },
+				"count": { "$sum": 1 }
+			} }
+		])
+
+	print "Date ID,Year,Month,Day,Multimedia,Total"
+	for dayStats in result['result']:
+		dateId = dayStats["_id"]
+		print ",".join([ dateId, dateId[0:4], dateId[4:6], dateId[6:], str(dayStats["multimedia"]), str(dayStats["count"]) ])
+
+
 def printSitemapUrlStats(dbcDatabase):
 	dbcUrlStats = dbcDatabase[dbsUrlStats]
 	urlStats = { }
 	urlStats['totalUrls'] = dbcUrlStats.count()
-
-
-	result = dbcUrlStats.aggregate([
-			{ "$group": {
-				"_id": "$value.sitemapTags",
-				"count": { "$sum": 1 },
-			} },
-		])
-	urlStats['tmp'] = result['result']
-
-	print json.dumps(urlStats, sort_keys=True, indent=4)
-	return
-
 
 	result = dbcUrlStats.aggregate([
 			{ "$group": {
@@ -288,12 +304,23 @@ def main(argv):
 
 #	analyzeVideoCollections(dbcDatabase)
 #	analyzePlaylistsVideos(dbcDatabase)
-	analyzeSitemapUrlStats(dbcDatabase)
+#	analyzeSitemapUrlStats(dbcDatabase)
 
-#	printTotals(dbcVideoStats)
+	printTotals(dbcVideoStats)
 #	printSetComparisons(dbcVideoStats)
 #	printPlaylistInfo(dbcPlaylistVideos)
-	printSitemapUrlStats(dbcDatabase)
+#	printSitemapUrlStats(dbcDatabase)
+#	printSitemapDailyStats(dbcDatabase)
+
+
+# look for sitemap urls in cse:
+#db.statsvideo.aggregate(
+#{ "$unwind": "$value.sitemap.urls" },
+#{ "$match": { "value.csevideo.status": 1 } },
+#{ "$unwind": "$value.csevideo.urls" },
+#{ "$project": { "sitemapUrl": "$value.sitemap.urls", "cseUrl": "$value.csevideo.urls", "same": { "$cond": [ { "$strcasecmp": [ "$value.sitemap.urls", "$value.csevideo.urls"] }, 0, 1 ] } } },
+#{ "$group": { "_id": "sitemapUrlsInCSE", "pairs": { "$sum": 1 }, "matches": { "$sum": "$same" } } }) 
+
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
